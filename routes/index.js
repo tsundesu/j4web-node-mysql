@@ -3,14 +3,17 @@ const router = express.Router();
 
 let todos = [];
 
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'ToDo App' });
+router.get('/', function (req, res, next) {
+  res.render('index', {
+    title: 'ToDo App',
+    todos: todos,
+  });
 });
 
-router.post('/', function(req, res, next) {
+router.post('/', function (req, res, next) {
   const todo = req.body.add;
   todos.push(todo);
-  res.render('index', { title: 'ToDo App' });
+  res.redirect('/');
 });
 
 module.exports = router;
