@@ -4,6 +4,6 @@
     "dockerfile": "Dockerfile"
   },
   "forwardPorts": [3306],
-  "postCreateCommand": "sudo service mysql start",
+  "postStartCommand": "sudo service mysql start",
   "remoteUser": "vscode"
 }

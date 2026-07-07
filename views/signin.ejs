@@ -7,14 +7,15 @@
   <meta name='viewport' content='width=device-width, initial-scale=1'>
 </head>
 <body>
-<form action="/signin" method="post">
-  <label>ユーザ名</label>
-  <input required type="text" name="username"/>
-  <br>
-  <label>パスワード</label>
-  <input required type="password" name="password"/>
-  <br>
-  <input type="submit" value="Sign in"/>
-</form>
+  <%- include('./error_messages'); %>
+  <form action="/signin" method="post">
+    <label>ユーザ名</label>
+    <input required type="text" name="username"/>
+    <br>
+    <label>パスワード</label>
+    <input required type="password" name="password"/>
+    <br>
+    <input type="submit" value="Sign in"/>
+  </form>
 </body>
 </html>
