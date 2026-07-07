@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-  </head>
-  <body>
+<head>
+  <title><%= title %></title>
+  <link rel='stylesheet' href='/stylesheets/style.css'/>
+</head>
+<body>
+<% if(isAuth) { %>
   <form action="/" method="post">
     <label>タスクの追加</label>
     <input required type="text" name="add" placeholder="何をする?"/>
@@ -15,5 +16,9 @@
       <li><span><%= todo.content %></span></li>
     <% } %>
   </ul>
-  </body>
+<% } else { %>
+  <h1>Welcome to the TodoApp</h1>
+  <a href="/signup">Sign up now!</a>
+<% } %>
+</body>
 </html>
