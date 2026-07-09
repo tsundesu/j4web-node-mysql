@@ -28,6 +28,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// authorization
+require("./config/passport")(app);
+
 // router
 app.use('/', require('./routes'));
 
