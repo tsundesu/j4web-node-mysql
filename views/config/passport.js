@@ -2,8 +2,22 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const knex = require("../db/knex");
 const bcrypt = require("bcrypt");
+const User = require("../models/user");
 
 module.exports = function (app) {
+  passport.serializeUser(function (user, done) {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(async function (id, done) {
+    try {
+      const user = await User.findById(id);
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
+  });
+
   passport.use(new LocalStrategy({
       usernameField: "username",
       passwordField: "password",
