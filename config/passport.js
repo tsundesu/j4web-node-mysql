@@ -8,6 +8,7 @@ const secret = "secretCuisine123";
 
 module.exports = function (app) {
   passport.serializeUser(function (user, done) {
+    console.log("serializeUser");
     done(null, user.id);
   });
 
@@ -55,5 +56,6 @@ module.exports = function (app) {
     })
   );
 
+  app.use(passport.initialize());
   app.use(passport.session());
 };
