@@ -3,7 +3,8 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "forwardPorts": [3306],
-  "postStartCommand": "sudo service mysql start",
+  "forwardPorts": [3000, 3306],
+  "postCreateCommand": "npm install",
+  "postStartCommand": "sudo usermod -d /var/lib/mysql mysql && sudo mkdir -p /var/run/mysqld && sudo chown -R mysql:mysql /var/run/mysqld && sudo service mysql start",
   "remoteUser": "vscode"
 }
