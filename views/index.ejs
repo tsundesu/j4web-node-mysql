@@ -4,33 +4,235 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
         integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-light">
   <%- include('./header'); %>
   <%- include('./error_messages'); %>
+
   <% if(isAuth) { %>
-    <div class="container">
-    <div class="row">
-      <div class="col-md-6">
-        <form action="/" method="post">
-          <label>タスクの追加</label>
-          <input required type="text" name="add" placeholder="何をする?"/>
-          <input type="submit" value="追加"/>
-        </form>
+    <div class="container mt-4">
+      
+      <!-- 進捗プログレスバー -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-body py-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="font-weight-bold text-muted small"><i class="fa-solid fa-chart-line text-info"></i> タスク進捗状況</span>
+                <span class="font-weight-bold text-info"><%= progressRate %>% (<%= completedCount %> / <%= totalCount %> 完了)</span>
+              </div>
+              <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: <%= progressRate %>%;" aria-valuenow="<%= progressRate %>" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="col-md-6">
-        <ul>
-          <% for(let todo of todos){ %>
-            <li><span><%= todo.content %></span></li>
-          <% } %>
-        </ul>
+
+      <!-- 操作通知メッセージ -->
+      <% if (typeof flashMessage !== 'undefined' && flashMessage) { %>
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+          <i class="fa-solid fa-circle-check"></i> <%= flashMessage %>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      <% } %>
+
+      <div class="row">
+        <!-- 左側：タスク追加フォーム -->
+        <div class="col-md-5 mb-4">
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              <h5 class="card-title text-primary"><i class="fa-solid fa-circle-plus"></i> 新規タスクの追加</h5>
+              <form action="/" method="post">
+                <div class="form-group">
+                  <label for="taskContent">タスク内容</label>
+                  <input required type="text" id="taskContent" name="add" class="form-control" placeholder="何をする?"/>
+                </div>
+                <div class="form-group">
+                  <label for="dueDate">期限日（任意）</label>
+                  <input type="date" id="dueDate" name="due_date" class="form-control"/>
+                </div>
+                <div class="form-group">
+                  <label for="priority">優先度</label>
+                  <select id="priority" name="priority" class="form-control">
+                    <option value="low">低</option>
+                    <option value="medium" selected>中</option>
+                    <option value="high">高</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">タスクを追加</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側：タスク一覧エリア -->
+        <div class="col-md-7">
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              
+              <!-- 検索・ソートコントロールバー -->
+              <form action="/" method="GET" class="form-row align-items-center mb-3">
+                <input type="hidden" name="filter" value="<%= filter %>">
+                <div class="col-md-7 mb-2 mb-md-0">
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    </div>
+                    <input type="text" name="search" class="form-control" placeholder="タスクを検索..." value="<%= search %>">
+                    <% if (search) { %>
+                      <div class="input-group-append">
+                        <a href="/?filter=<%= filter %>&sort=<%= sort %>" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark"></i></a>
+                      </div>
+                    <% } %>
+                  </div>
+                </div>
+                <div class="col-md-5">
+                  <select name="sort" class="form-control form-control-sm" onchange="this.form.submit()">
+                    <option value="id_desc" <%= sort === 'id_desc' ? 'selected' : '' %>>登録が新しい順</option>
+                    <option value="id_asc" <%= sort === 'id_asc' ? 'selected' : '' %>>登録が古い順</option>
+                    <option value="due_date" <%= sort === 'due_date' ? 'selected' : '' %>>期限が近い順</option>
+                    <option value="priority" <%= sort === 'priority' ? 'selected' : '' %>>優先度順</option>
+                  </select>
+                </div>
+              </form>
+
+              <!-- フィルター切り替え & 一括削除ボタン -->
+              <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                <ul class="nav nav-pills">
+                  <li class="nav-item">
+                    <a class="nav-link btn-sm py-1 <%= filter === 'all' ? 'active' : '' %>" href="/?filter=all&search=<%= search %>&sort=<%= sort %>">すべて</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link btn-sm py-1 <%= filter === 'active' ? 'active' : '' %>" href="/?filter=active&search=<%= search %>&sort=<%= sort %>">未完了</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link btn-sm py-1 <%= filter === 'completed' ? 'active' : '' %>" href="/?filter=completed&search=<%= search %>&sort=<%= sort %>">完了済</a>
+                  </li>
+                </ul>
+                
+                <% if (completedCount > 0) { %>
+                  <form action="/clear-completed" method="post" onsubmit="return confirm('完了したタスクをすべて削除しますか？');" class="m-0">
+                    <button type="submit" class="btn btn-outline-danger btn-sm py-1"><i class="fa-solid fa-trash-can-arrow-up"></i> 完了済を一括削除</button>
+                  </form>
+                <% } %>
+              </div>
+
+              <h5 class="card-title text-secondary"><i class="fa-solid fa-list-check"></i> タスク一覧</h5>
+              <ul class="list-group">
+                <% if (todos.length === 0) { %>
+                  <li class="list-group-item text-center text-muted border-0 bg-light rounded py-4">
+                    該当するタスクはありません。
+                  </li>
+                <% } else { %>
+                  <% for(let todo of todos){ %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded shadow-xs border">
+                      
+                      <% if (typeof editId !== 'undefined' && editId == todo.id) { %>
+                        <!-- 編集モードフォーム -->
+                        <form action="/edit" method="POST" class="w-100 m-0">
+                          <input type="hidden" name="id" value="<%= todo.id %>">
+                          <div class="form-row align-items-center">
+                            <div class="col-md-5 mb-2 mb-md-0">
+                              <input type="text" name="content" class="form-control form-control-sm" value="<%= todo.content %>" required placeholder="タスク内容">
+                            </div>
+                            <div class="col-md-3 mb-2 mb-md-0">
+                              <input type="date" name="due_date" class="form-control form-control-sm" value="<%= todo.due_date ? new Date(todo.due_date).toISOString().split('T')[0] : '' %>">
+                            </div>
+                            <div class="col-md-2 mb-2 mb-md-0">
+                              <select name="priority" class="form-control form-control-sm">
+                                <option value="low" <%= todo.priority === 'low' ? 'selected' : '' %>>低</option>
+                                <option value="medium" <%= todo.priority === 'medium' ? 'selected' : '' %>>中</option>
+                                <option value="high" <%= todo.priority === 'high' ? 'selected' : '' %>>高</option>
+                              </select>
+                            </div>
+                            <div class="col-md-2 text-right">
+                              <button type="submit" class="btn btn-success btn-xs" title="保存"><i class="fa-solid fa-check"></i></button>
+                              <a href="/?filter=<%= filter %>&search=<%= search %>&sort=<%= sort %>" class="btn btn-secondary btn-xs" title="キャンセル"><i class="fa-solid fa-xmark"></i></a>
+                            </div>
+                          </div>
+                        </form>
+                      <% } else { %>
+                        <!-- 通常表示モード -->
+                        
+                        <!-- 1. 完了・未完了トグルボタン -->
+                        <form action="/toggle" method="POST" class="m-0 mr-3">
+                          <input type="hidden" name="id" value="<%= todo.id %>">
+                          <input type="hidden" name="current_status" value="<%= todo.is_completed %>">
+                          <button type="submit" class="btn btn-link p-0 text-decoration-none">
+                            <% if (todo.is_completed) { %>
+                              <i class="fa-regular fa-square-check fa-xl text-success"></i>
+                            <% } else { %>
+                              <i class="fa-regular fa-square fa-xl text-muted"></i>
+                            <% } %>
+                          </button>
+                        </form>
+
+                        <!-- 2. テキスト・優先度・期限バッジの表示 -->
+                        <div class="flex-grow-1">
+                          <span class="<%= todo.is_completed ? 'text-muted' : '' %>" 
+                                style="<%= todo.is_completed ? 'text-decoration: line-through;' : '' %>">
+                            <%= todo.content %>
+                          </span>
+
+                          <!-- 優先度バッジ -->
+                          <% if (todo.priority === 'high') { %>
+                            <span class="badge badge-danger ml-1"><i class="fa-solid fa-fire"></i> 高</span>
+                          <% } else if (todo.priority === 'medium') { %>
+                            <span class="badge badge-warning ml-1"><i class="fa-solid fa-triangle-exclamation"></i> 中</span>
+                          <% } else if (todo.priority === 'low') { %>
+                            <span class="badge badge-primary ml-1"><i class="fa-solid fa-circle-info"></i> 低</span>
+                          <% } %>
+                          
+                          <!-- 期限日バッジ -->
+                          <% if (todo.due_date) { %>
+                            <% 
+                              const isOverdue = !todo.is_completed && new Date(todo.due_date) < new Date(new Date().setHours(0,0,0,0));
+                              const formattedDate = new Date(todo.due_date).toLocaleDateString('ja-JP');
+                            %>
+                            <span class="badge <%= isOverdue ? 'badge-danger' : 'badge-light' %> ml-1" title="<%= isOverdue ? '期限が過ぎています' : '期限日' %>">
+                              <i class="fa-regular fa-calendar-days"></i> <%= formattedDate %>
+                            </span>
+                          <% } %>
+                        </div>
+
+                        <!-- 3. アクション（編集・削除）ボタン -->
+                        <div class="d-flex align-items-center">
+                          <a href="/?edit=<%= todo.id %>&filter=<%= filter %>&search=<%= search %>&sort=<%= sort %>" class="btn btn-outline-secondary btn-sm border-0 mr-1" title="編集">
+                            <i class="fa-regular fa-pen-to-square"></i>
+                          </a>
+                          <form action="/delete" method="POST" class="m-0">
+                            <input type="hidden" name="id" value="<%= todo.id %>">
+                            <button type="submit" class="btn btn-outline-danger btn-sm border-0" title="削除">
+                              <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                          </form>
+                        </div>
+                      <% } %>
+
+                    </li>
+                  <% } %>
+                <% } %>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
   <% } else { %>
-    <h1>Welcome to the TodoApp</h1>
-    <a class="btn btn-primary" href="/signup" role="button">Sign up now!</a>
+    <div class="container text-center mt-5">
+      <div class="jumbotron bg-white shadow-sm rounded">
+        <h1 class="display-4">Welcome to the TodoApp</h1>
+        <p class="lead">タスクを整理して、効率的な一日を過ごしましょう。</p>
+        <hr class="my-4">
+        <a class="btn btn-primary btn-lg px-5" href="/signup" role="button">Sign up now!</a>
+      </div>
+    </div>
   <% } %>
+
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
         crossorigin="anonymous"></script>
